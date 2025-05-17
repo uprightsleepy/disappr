@@ -1,0 +1,12 @@
+deploy/*.tfstate
+deploy/*.tfstate.backup
+deploy/terraform.tfvars
+deploy/*.auto.tfvars
+deploy/.terraform/
+deploy/.terraform.lock.hcl
+deploy/crash.log
+
+deploy/*_override.tf
+deploy/*_override.tf.json
+deploy/override.tf
+deploy/override.tf.json
