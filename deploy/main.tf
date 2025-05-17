@@ -33,6 +33,10 @@ resource "google_cloud_run_service" "disappr" {
           name  = "GCP_PROJECT"
           value = var.project_id
         }
+        env {
+          name  = "FIREBASE_PROJECT_ID"
+          value = var.firebase_project_id
+        }
       }
     }
   }

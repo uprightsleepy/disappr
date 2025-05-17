@@ -1,5 +1,3 @@
-// ghostbin-backend/main.go
-
 package main
 
 import (
@@ -15,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"disappr.io/crypto"
 	"disappr.io/secrets"
+	"disappr.io/auth"
 )
 
 type Paste struct {
@@ -23,6 +22,8 @@ type Paste struct {
 	BurnAfterRead  bool      `json:"burn_after_read"`
 	ExpiresAt      time.Time `json:"expires_at"`
 	Viewed         bool      `json:"-"`
+	OwnerID        string    `json:"owner_id"`
+	TTL            time.Time `firestore:"ttl"`
 }
 
 var firestoreClient *firestore.Client
@@ -34,6 +35,10 @@ func main() {
 		log.Fatal("GCP_PROJECT environment variable must be set")
 	}
 
+	if err := auth.InitFirebaseVerifier(); err != nil {
+		log.Fatalf("Failed to initialize Firebase verifier: %v", err)
+	}
+
 	var err error
 	firestoreClient, err = firestore.NewClient(ctx, projectID)
 	if err != nil {
@@ -41,7 +46,7 @@ func main() {
 	}
 	defer firestoreClient.Close()
 
-	http.HandleFunc("/api/v1/paste", createPasteHandler)
+	http.HandleFunc("/api/v1/paste", auth.RequireAuth(createPasteHandler))
 	http.HandleFunc("/api/v1/view", viewPasteHandler)
 
 	port := os.Getenv("PORT")
@@ -81,12 +86,16 @@ func createPasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expiry := time.Now().Add(time.Duration(req.ExpiresInMinutes) * time.Minute)
+	userID := r.Context().Value(auth.UserIDKey).(string)
 	pasteID := uuid.NewString()
 	paste := Paste{
 		ID:            pasteID,
 		EncryptedData: encrypted,
 		BurnAfterRead: req.BurnAfterRead,
-		ExpiresAt:     time.Now().Add(time.Duration(req.ExpiresInMinutes) * time.Minute),
+		ExpiresAt:     expiry,
+		OwnerID:       userID,
+		TTL:           expiry,
 	}
 
 	_, err = firestoreClient.Collection("pastes").Doc(pasteID).Set(r.Context(), paste)
@@ -142,6 +151,7 @@ func viewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	if paste.BurnAfterRead {
 		_, _ = firestoreClient.Collection("pastes").Doc(id).Update(r.Context(), []firestore.Update{
 			{Path: "Viewed", Value: true},
+			{Path: "ttl", Value: time.Now()},
 		})
 	}
 
