@@ -18,3 +18,8 @@ variable "firebase_project_id" {
   description = "Firebase project ID for JWT verification"
   type        = string
 }
+
+variable "project_number" {
+  description = "GCP project number"
+  type        = string
+}

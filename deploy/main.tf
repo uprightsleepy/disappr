@@ -68,10 +68,10 @@ resource "google_cloud_run_service_iam_member" "invoker" {
   member   = "allUsers"
 }
 
-# Cloud Build trigger using GitHub (Gen 1)
+# Cloud Build trigger for GitHub (1st gen)
 resource "google_cloudbuild_trigger" "disappr_trigger" {
   name     = "disappr-deploy"
-  location = "us-central1"
+  location = "global" # 1st-gen triggers are global
 
   github {
     owner = "uprightsleepy"
@@ -82,5 +82,7 @@ resource "google_cloudbuild_trigger" "disappr_trigger" {
     }
   }
 
-  filename = "cloudbuild.yaml"
+  filename        = "cloudbuild.yaml"
+
+  service_account = "projects/${var.project_id}/serviceAccounts/${var.project_number}@cloudbuild.gserviceaccount.com"
 }
