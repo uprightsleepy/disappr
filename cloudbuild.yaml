@@ -1,0 +1,54 @@
+steps:
+  - name: 'golang'
+    id: Run tests with coverage check
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        go test ./... -coverprofile=coverage.out
+        coverage=$(go tool cover -func=coverage.out | grep total: | awk '{print substr($3, 1, length($3)-1)}')
+        echo "Test coverage: $coverage%"
+        threshold=80.0
+        result=$(echo "$coverage < $threshold" | bc -l)
+        if [ "$result" -eq 1 ]; then
+          echo "Test coverage $coverage% is below threshold of $threshold%"
+          exit 1
+        else
+          echo "Test coverage $coverage% meets threshold"
+        fi
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build Docker image
+    args:
+      [
+        'build',
+        '-t',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA',
+        '.'
+      ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Push image to Artifact Registry
+    args: [
+      'push',
+      'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
+    ]
+
+  - name: 'hashicorp/terraform:1.6.0'
+    id: Terraform init
+    entrypoint: 'sh'
+    dir: 'terraform'
+    args: ['init']
+
+  - name: 'hashicorp/terraform:1.6.0'
+    id: Terraform apply
+    entrypoint: 'sh'
+    dir: 'terraform'
+    args:
+      - '-c'
+      - |
+        sed -i "s|container_image *=.*|container_image = \"us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA\"|" terraform.tfvars
+        terraform apply -auto-approve -var-file=terraform.tfvars
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'

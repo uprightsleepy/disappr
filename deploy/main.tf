@@ -3,16 +3,28 @@ provider "google" {
   region  = var.region
 }
 
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 6.35.0"
+    }
+  }
+}
+
+# Enable required APIs
 resource "google_project_service" "required" {
   for_each = toset([
     "run.googleapis.com",
     "firestore.googleapis.com",
     "cloudbuild.googleapis.com",
-    "logging.googleapis.com"
+    "logging.googleapis.com",
+    "artifactregistry.googleapis.com"
   ])
   service = each.key
 }
 
+# Firestore native DB setup
 resource "google_firestore_database" "default" {
   project     = var.project_id
   name        = "(default)"
@@ -21,6 +33,7 @@ resource "google_firestore_database" "default" {
   depends_on  = [google_project_service.required]
 }
 
+# Cloud Run service
 resource "google_cloud_run_service" "disappr" {
   name     = "disappr"
   location = var.region
@@ -47,9 +60,27 @@ resource "google_cloud_run_service" "disappr" {
   }
 }
 
+# Allow public access to Cloud Run
 resource "google_cloud_run_service_iam_member" "invoker" {
   service  = google_cloud_run_service.disappr.name
   location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+# Cloud Build trigger using GitHub (Gen 1)
+resource "google_cloudbuild_trigger" "disappr_trigger" {
+  name     = "disappr-deploy"
+  location = "us-central1"
+
+  github {
+    owner = "uprightsleepy"
+    name  = "disappr"
+
+    push {
+      branch = "^main$"
+    }
+  }
+
+  filename = "cloudbuild.yaml"
 }

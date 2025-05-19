@@ -1,20 +1,20 @@
 variable "project_id" {
-  description = "GCP Project ID"
+  description = "GCP project ID"
   type        = string
 }
 
 variable "region" {
-  description = "GCP region"
+  description = "Region for resources"
   type        = string
   default     = "us-central1"
 }
 
 variable "container_image" {
-  description = "Docker image deployed to Cloud Run"
+  description = "Container image URL for Cloud Run"
   type        = string
 }
 
 variable "firebase_project_id" {
-  description = "Firebase project ID for JWT validation"
+  description = "Firebase project ID for JWT verification"
   type        = string
 }
