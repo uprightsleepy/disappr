@@ -77,4 +77,4 @@ steps:
           -var="project_number=$PROJECT_NUMBER"
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'`
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
