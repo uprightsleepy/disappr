@@ -2,6 +2,12 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # Code linting
+  - name: 'golangci/golangci-lint:latest'
+    id: Lint Go code
+    args: ['golangci-lint', 'run', '--timeout=5m']
+
+  # Run tests with coverage
   - name: 'golang'
     id: Run tests with coverage check
     entrypoint: 'bash'
@@ -23,6 +29,7 @@ steps:
           echo "Test coverage $coverage% meets threshold of 80%"
         fi
 
+  # Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker image
     args:
@@ -33,6 +40,26 @@ steps:
         '.'
       ]
 
+  # Security scan the image for vulnerabilities
+  - name: 'aquasec/trivy'
+    id: Scan image for vulnerabilities
+    args:
+      - 'image'
+      - '--format=table'
+      - '--exit-code=1'
+      - '--severity=HIGH,CRITICAL'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
+
+  # Scan code for secrets and other security issues
+  - name: 'aquasec/trivy'
+    id: Scan code for secrets
+    args:
+      - 'fs'
+      - '--security-checks=secret,vuln'
+      - '--exit-code=1'
+      - '.'
+
+  # Push image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: Push image to Artifact Registry
     args: [
@@ -40,6 +67,7 @@ steps:
       'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
     ]
 
+  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Deploy to Cloud Run
     entrypoint: 'bash'
@@ -54,3 +82,9 @@ steps:
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
+
+# Optionally store artifacts (test coverage, scan results, etc.)
+artifacts:
+  objects:
+    location: 'gs://$PROJECT_ID-build-artifacts/$SHORT_SHA/'
+    paths: ['coverage.out']
