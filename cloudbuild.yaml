@@ -15,10 +15,10 @@ steps:
         # Extract just the number part (without the decimal)
         coverage_int=${coverage%.*}
         
-        # Compare against threshold
+        # Compare against threshold (but don't fail the build yet)
         if [ "$coverage_int" -lt 80 ]; then
           echo "Test coverage $coverage% is below threshold of 80%"
-          echo "Continuing build despite low coverage (threshold enforcement disabled)"
+          echo "Continuing build despite low coverage"
         else
           echo "Test coverage $coverage% meets threshold of 80%"
         fi
@@ -41,14 +41,16 @@ steps:
     ]
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: Update Cloud Run service
+    id: Deploy to Cloud Run
     entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # Update the Cloud Run service with the new image
         gcloud run services update disappr \
           --image=us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA \
-          --region=us-central1
+          --region=us-central1 \
+          --project=$PROJECT_ID
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
