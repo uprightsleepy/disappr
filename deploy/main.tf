@@ -12,7 +12,6 @@ terraform {
   }
 }
 
-# Enable required APIs
 resource "google_project_service" "required" {
   for_each = toset([
     "run.googleapis.com",
@@ -24,7 +23,6 @@ resource "google_project_service" "required" {
   service = each.key
 }
 
-# Firestore native DB setup
 resource "google_firestore_database" "default" {
   project     = var.project_id
   name        = "(default)"
@@ -33,7 +31,6 @@ resource "google_firestore_database" "default" {
   depends_on  = [google_project_service.required]
 }
 
-# Cloud Run service
 resource "google_cloud_run_service" "disappr" {
   name     = "disappr"
   location = var.region
@@ -60,7 +57,6 @@ resource "google_cloud_run_service" "disappr" {
   }
 }
 
-# Allow public access to Cloud Run
 resource "google_cloud_run_service_iam_member" "invoker" {
   service  = google_cloud_run_service.disappr.name
   location = var.region
@@ -68,21 +64,8 @@ resource "google_cloud_run_service_iam_member" "invoker" {
   member   = "allUsers"
 }
 
-# Cloud Build trigger for GitHub (1st gen)
-resource "google_cloudbuild_trigger" "disappr_trigger" {
-  name     = "disappr-deploy"
-  location = "global" # 1st-gen triggers are global
-
-  github {
-    owner = "uprightsleepy"
-    name  = "disappr"
-
-    push {
-      branch = "^main$"
-    }
-  }
-
-  filename        = "cloudbuild.yaml"
-
-  service_account = "projects/${var.project_id}/serviceAccounts/${var.project_number}@cloudbuild.gserviceaccount.com"
+resource "google_cloudbuildv2_repository" "disappr" {
+  name              = "disappr"
+  parent_connection = "projects/${var.project_id}/locations/${var.region}/connections/Disappr_Connection"
+  remote_uri        = "https://github.com/uprightsleepy/disappr.git"
 }
