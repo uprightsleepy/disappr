@@ -44,6 +44,15 @@ steps:
     args:
       - '-c'
       - 'terraform init'
+  
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Get project number
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+        echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> /workspace/build.env
 
   - name: 'hashicorp/terraform:1.6.0'
     id: Terraform apply
@@ -52,8 +61,20 @@ steps:
     args:
       - '-c'
       - |
-        sed -i "s|container_image *=.*|container_image = \"us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA\"|" terraform.tfvars
-        terraform apply -auto-approve -var-file=terraform.tfvars
+        # Source environment variables
+        source /workspace/build.env
+        
+        # Create terraform.tfvars dynamically
+        cat > terraform.tfvars << EOF
+        project_id = "$PROJECT_ID"
+        region = "us-central1"
+        container_image = "us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA"
+        firebase_project_id = "$PROJECT_ID"
+        project_number = "$PROJECT_NUMBER"
+        EOF
+        
+        # Apply the configuration
+        terraform apply -auto-approve
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
