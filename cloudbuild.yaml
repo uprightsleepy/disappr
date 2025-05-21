@@ -2,15 +2,6 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # Add step to enable required APIs
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: Enable required APIs
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        gcloud services enable cloudresourcemanager.googleapis.com
-
   - name: 'golang'
     id: Run tests with coverage check
     entrypoint: 'bash'
@@ -18,8 +9,6 @@ steps:
       - '-c'
       - |
         go test ./... -coverprofile=coverage.out
-        
-        # Get the total coverage percentage
         coverage=$(go tool cover -func=coverage.out | grep total: | awk '{print substr($3, 1, length($3)-1)}')
         echo "Test coverage: $coverage%"
         
@@ -52,36 +41,14 @@ steps:
     ]
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: Get project number
-    entrypoint: 'sh'
+    id: Update Cloud Run service
+    entrypoint: 'bash'
     args:
       - '-c'
       - |
-        PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
-        echo $PROJECT_NUMBER > /workspace/project_number.txt
-
-  - name: 'hashicorp/terraform:1.6.0'
-    id: Terraform init and apply
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        # Change to deploy directory
-        cd deploy
-        
-        # Initialize Terraform
-        terraform init
-        
-        # Get project number from file
-        PROJECT_NUMBER=$(cat /workspace/project_number.txt)
-        
-        # Apply with variables passed directly
-        terraform apply -auto-approve \
-          -var="project_id=$PROJECT_ID" \
-          -var="region=us-central1" \
-          -var="container_image=us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA" \
-          -var="firebase_project_id=$PROJECT_ID" \
-          -var="project_number=$PROJECT_NUMBER"
+        gcloud run services update disappr \
+          --image=us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA \
+          --region=us-central1
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'

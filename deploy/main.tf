@@ -29,6 +29,14 @@ resource "google_firestore_database" "default" {
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
   depends_on  = [google_project_service.required]
+  
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      location_id,
+      type,
+    ]
+  }
 }
 
 resource "google_cloud_run_service" "disappr" {
@@ -55,17 +63,23 @@ resource "google_cloud_run_service" "disappr" {
     percent         = 100
     latest_revision = true
   }
-}
-
-resource "google_cloud_run_service_iam_member" "invoker" {
-  service  = google_cloud_run_service.disappr.name
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "allUsers"
+  
+  lifecycle {
+    ignore_changes = [
+      metadata,
+      template[0].metadata,
+      template[0].spec[0].containers[0].ports,
+      template[0].spec[0].containers[0].resources,
+    ]
+  }
 }
 
 resource "google_cloudbuildv2_repository" "disappr" {
   name              = "disappr"
   parent_connection = "projects/${var.project_id}/locations/${var.region}/connections/Disappr_Connection"
   remote_uri        = "https://github.com/uprightsleepy/disappr.git"
+  
+  lifecycle {
+    prevent_destroy = true
+  }
 }
