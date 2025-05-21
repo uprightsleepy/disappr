@@ -77,9 +77,3 @@ steps:
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
-
-# Optionally store artifacts (test coverage, scan results, etc.)
-artifacts:
-  objects:
-    location: 'gs://$PROJECT_ID-build-artifacts/$SHORT_SHA/'
-    paths: ['coverage.out']
