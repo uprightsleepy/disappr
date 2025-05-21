@@ -41,7 +41,9 @@ steps:
     id: Terraform init
     entrypoint: 'sh'
     dir: 'terraform'
-    args: ['init']
+    args:
+      - '-c'
+      - 'terraform init'
 
   - name: 'hashicorp/terraform:1.6.0'
     id: Terraform apply
