@@ -37,14 +37,6 @@ steps:
       'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
     ]
 
-  - name: 'hashicorp/terraform:1.6.0'
-    id: Terraform init
-    entrypoint: 'sh'
-    dir: 'terraform'
-    args:
-      - '-c'
-      - 'terraform init'
-  
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Get project number
     entrypoint: 'bash'
@@ -55,26 +47,29 @@ steps:
         echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> /workspace/build.env
 
   - name: 'hashicorp/terraform:1.6.0'
-    id: Terraform apply
-    entrypoint: 'sh'
-    dir: 'terraform'
+    id: Terraform init and apply
+    entrypoint: 'bash'
     args:
       - '-c'
       - |
+        # Change to deploy directory where Terraform files are located
+        cd deploy
+        echo "Changed to deploy directory: $(pwd)"
+        ls -la
+        
+        # Initialize Terraform
+        terraform init
+        
         # Source environment variables
         source /workspace/build.env
         
-        # Create terraform.tfvars dynamically
-        cat > terraform.tfvars << EOF
-        project_id = "$PROJECT_ID"
-        region = "us-central1"
-        container_image = "us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA"
-        firebase_project_id = "$PROJECT_ID"
-        project_number = "$PROJECT_NUMBER"
-        EOF
-        
-        # Apply the configuration
-        terraform apply -auto-approve
+        # Apply directly with variables
+        terraform apply -auto-approve \
+          -var="project_id=$PROJECT_ID" \
+          -var="region=us-central1" \
+          -var="container_image=us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA" \
+          -var="firebase_project_id=$PROJECT_ID" \
+          -var="project_number=$PROJECT_NUMBER"
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/disappr/disappr:$SHORT_SHA'
