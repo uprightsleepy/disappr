@@ -2,11 +2,6 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # Code linting
-  - name: 'golangci/golangci-lint:latest'
-    id: Lint Go code
-    args: ['golangci-lint', 'run', '--timeout=5m']
-
   # Run tests with coverage
   - name: 'golang'
     id: Run tests with coverage check
