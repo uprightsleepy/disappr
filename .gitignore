@@ -1,5 +1,6 @@
 deploy/*.tfstate
 deploy/*.tfstate.backup
+deploy/*.tfstate.*.backup
 deploy/terraform.tfvars
 deploy/*.auto.tfvars
 deploy/.terraform/
