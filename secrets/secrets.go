@@ -6,23 +6,20 @@ import (
 	"fmt"
 	"os"
 
-	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/googleapis/gax-go/v2"
-	// Ensure option is imported if secretmanager.NewClient has options in its signature
-	// "google.golang.org/api/option"
 )
 
 // secretManagerClient defines the interface for the Secret Manager client.
 // This allows for mocking in tests.
-type secretManagerClient interface {
+type SecretManagerClient interface {
 	AccessSecretVersion(context.Context, *secretmanagerpb.AccessSecretVersionRequest, ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
 	Close() error
 }
 
 // newClientFunc defines a function type for creating a new secretManagerClient.
 // This is used to allow mocking of client creation.
-type newClientFunc func(ctx context.Context) (secretManagerClient, error)
+type newClientFunc func(ctx context.Context) (SecretManagerClient, error)
 
 func GetEncryptionKey(ctx context.Context, ncf newClientFunc) ([]byte, error) {
 	projectID := os.Getenv("GCP_PROJECT")

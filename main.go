@@ -19,7 +19,7 @@ import (
 
 // createActualSecretManagerClient conforms to the secrets.newClientFunc type.
 // It provides the actual implementation for creating a Secret Manager client.
-func createActualSecretManagerClient(ctx context.Context) (secrets.secretManagerClient, error) {
+func createActualSecretManagerClient(ctx context.Context) (secrets.SecretManagerClient, error) {
 	// secretmanager.NewClient returns *secretmanager.Client, which implements secrets.secretManagerClient
 	return secretmanager.NewClient(ctx)
 }

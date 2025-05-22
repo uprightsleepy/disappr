@@ -3,7 +3,7 @@ package secrets
 import (
 	"context"
 	"encoding/base64"
-	"errors" // Added for the new test case
+	"errors"
 	"testing"
 
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
@@ -52,7 +52,7 @@ func TestGetEncryptionKey_Success(t *testing.T) {
 	}
 
 	// Define the newClientFunc to return the mock client instance
-	mockNCF := func(ctx context.Context) (secretManagerClient, error) {
+	mockNCF := func(ctx context.Context) (SecretManagerClient, error) {
 		return mockClientInstance, nil
 	}
 
@@ -71,7 +71,7 @@ func TestGetEncryptionKey_ClientError(t *testing.T) {
 	expectedErrorMsg := "mock NewClient error"
 
 	// Define a newClientFunc that returns an error
-	mockNCF := func(ctx context.Context) (secretManagerClient, error) {
+	mockNCF := func(ctx context.Context) (SecretManagerClient, error) {
 		return nil, errors.New(expectedErrorMsg)
 	}
 
@@ -103,7 +103,7 @@ func TestGetEncryptionKey_AccessSecretVersionError(t *testing.T) {
 	}
 
 	// Define the newClientFunc to return the mock client instance (simulating successful client creation)
-	mockNCF := func(ctx context.Context) (secretManagerClient, error) {
+	mockNCF := func(ctx context.Context) (SecretManagerClient, error) {
 		return mockClientInstance, nil
 	}
 
@@ -138,7 +138,7 @@ func TestGetEncryptionKey_DecodeError(t *testing.T) {
 	}
 
 	// Define the newClientFunc to return the mock client instance
-	mockNCF := func(ctx context.Context) (secretManagerClient, error) {
+	mockNCF := func(ctx context.Context) (SecretManagerClient, error) {
 		return mockClientInstance, nil
 	}
 
