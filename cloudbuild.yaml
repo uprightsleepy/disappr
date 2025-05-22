@@ -2,6 +2,43 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # Install golangci-lint
+  - name: 'golang'
+    id: Install golangci-lint
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+  # Download Go Modules
+  - name: 'golang'
+    id: 'Download Go Modules'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        go mod tidy && go mod download
+  # Run linter and save results
+  - name: 'golang'
+    id: 'Run linter and save results'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        $(go env GOPATH)/bin/golangci-lint run ./... --timeout=5m --out-format json:lint-results.json || true
+  # Display lint results
+  - name: 'alpine'
+    id: 'Display lint results'
+    entrypoint: 'cat'
+    args: ['lint-results.json']
+  # Enforce linting
+  - name: 'golang'
+    id: 'Enforce linting'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        $(go env GOPATH)/bin/golangci-lint run ./... --timeout=5m
   # Run tests with coverage
   - name: 'golang'
     id: Run tests with coverage check
