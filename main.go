@@ -12,9 +12,17 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
 	"disappr.io/crypto"
-	"disappr.io/secrets"
+	"disappr.io/secrets" // Will use secrets.secretManagerClient and secrets.newClientFunc
 	"disappr.io/auth"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1" // Added for the actual client
 )
+
+// createActualSecretManagerClient conforms to the secrets.newClientFunc type.
+// It provides the actual implementation for creating a Secret Manager client.
+func createActualSecretManagerClient(ctx context.Context) (secrets.SecretManagerClient, error) {
+	// secretmanager.NewClient returns *secretmanager.Client, which implements secrets.secretManagerClient
+	return secretmanager.NewClient(ctx)
+}
 
 type Paste struct {
 	ID             string    `json:"id"`
@@ -75,8 +83,9 @@ func createPasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := secrets.GetEncryptionKey(r.Context())
+	key, err := secrets.GetEncryptionKey(r.Context(), createActualSecretManagerClient)
 	if err != nil {
+		log.Printf("Error getting encryption key: %v", err) // Log the actual error
 		http.Error(w, "Failed to load encryption key", http.StatusInternalServerError)
 		return
 	}
@@ -136,8 +145,9 @@ func viewPasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := secrets.GetEncryptionKey(r.Context())
+	key, err := secrets.GetEncryptionKey(r.Context(), createActualSecretManagerClient)
 	if err != nil {
+		log.Printf("Error getting encryption key: %v", err) // Log the actual error
 		http.Error(w, "Failed to load encryption key", http.StatusInternalServerError)
 		return
 	}
