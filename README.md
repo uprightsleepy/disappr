@@ -150,9 +150,3 @@ Key resources include:
 - [ ] Custom domain mapping
 - [ ] Enhanced observability and monitoring
 - [ ] User paste management dashboard
-
----
-
-## 📜 License
-
-MIT — do whatever, just don't sell insecure pastebins.
